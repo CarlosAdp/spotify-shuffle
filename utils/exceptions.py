@@ -1,0 +1,2 @@
+class DeviceNotActive(Exception):
+    pass
