@@ -3,4 +3,6 @@ from utils.manager import Manager
 
 Constants.init()
 Manager.get_token()
-print(Constants.token)
+Manager.get_spotify_instance()
+print(len(Manager.get_songs_ids()))
+print(len(Manager.get_songs_features()))
