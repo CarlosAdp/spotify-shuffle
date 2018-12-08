@@ -12,10 +12,12 @@ if __name__ == "__main__":
         fd = open(filename, "r")
 
         csv_reader = csv.reader(fd, delimiter = ',')
+        old_library = []
+        for row in csv_reader:
+            old_library.append(row)
 
         # Armazenando ids registrados no espelho local
-        local_id_list = list(list(zip(*csv_reader))[0])
-        fd.close()
+        local_id_list = list(list(zip(*old_library))[0])
     except FileNotFoundError:
         local_id_list = []
     except IndexError:
@@ -41,17 +43,14 @@ if __name__ == "__main__":
 
     # Normalizando as features
     features_normalized = [normalize_features(item) for item in features_denormalized]
-    print(features_normalized[0])
 
     # Atualizando o arquivo csv
     fd = open(filename, "w")
     csv_writer = csv.writer(fd)
 
     if len(local_id_list) > 0:
-        for row in csv_reader:
-            if row[0] in ids_to_delete:
-                pass
-            else:
+        for row in old_library:
+            if row[0] not in ids_to_delete:
                 csv_writer.writerow(row)
 
     for features in features_normalized:
