@@ -1,5 +1,8 @@
 from utils.constants import Constants
 from spotipy.util import prompt_for_user_token
+from pprint import pprint
+from numpy import average
+import random
 import spotipy
 
 function_type = type(prompt_for_user_token)
@@ -45,3 +48,32 @@ def normalize_features(denormalized_features: dict) -> tuple:
 
 def get_song_distance(s1_features, s2_features, weight):
     return sum([w * (i1 - i2) * (i1 - i2) for w, i1, i2 in zip(weight, s1_features, s2_features)])
+
+def calculate_base_features(chosen_ids: list, infos: dict) -> list:
+    weights = [1, 2, 4, 8, 16]
+    last_ids = chosen_ids[-5:]
+    last_ids_features = [infos.get(id_) for id_ in last_ids]
+    weights = weights[-1 * len(last_ids_features):]
+
+    return average(last_ids_features, axis=0, weights=weights[-1 * len(last_ids_features):])
+
+def russian_roulette(iterable, key):
+    items_and_metrics = []
+    metrics_sum = 0
+
+    for item in iterable:
+        metric = key(item)
+        metrics_sum += metric
+
+        items_and_metrics.append({
+            'item': item,
+            'metric': metric
+            })
+
+    reference_value = random.uniform(0, metrics_sum)
+    reference_sum = 0
+
+    for item_and_metric in items_and_metrics:
+        reference_sum += item_and_metric.get("metric")
+        if reference_sum > reference_value:
+            return item_and_metric.get("item")
