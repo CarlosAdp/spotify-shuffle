@@ -8,7 +8,7 @@ from utils.constants import Constants
 
 # Definição do nome do arquivo e dos pesos para calculo de distância entre músicas
 filename = "library_mirror.csv"
-weights = [3, 7, 0.5, 5, 1, 2, 1, 0.5, 1, 3, 0.5, 10]
+weights = [6, 16, 0.5, 18, 1, 6, 1, 0.5, 1, 5, 0.5, 20]
 
 
 if __name__ == "__main__":
@@ -36,7 +36,6 @@ if __name__ == "__main__":
             # Cálculo da "média" das últimas músicas escolhidas (pesos de 16 para a última, 8 para a anterior, 4, 2 e 1, sucessivamente)
             base_features = calculate_base_features(chosen_ids, infos)
             closed_candidates = sorted(candidates, key = lambda item : get_song_distance(infos[item], base_features, weights))[:int(len(candidates)/20)]
-            print(len(closed_candidates))
 
             next_id = russian_roulette(closed_candidates, key = lambda item: 1 / (0.00000001 + get_song_distance(base_features, infos.get(item), weights)))
             chosen_ids.append(next_id)
