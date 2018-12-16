@@ -19,7 +19,7 @@ def get_token() -> str:
 def execute_spotify_command(spotify_instance, command, args = [], kwargs = {}) -> list:
     result = []
 
-    partial_result = command(spotify_instance, args, *args, **kwargs)
+    partial_result = command(spotify_instance, *args, **kwargs)
     result = result + [item for item in partial_result['items']]
 
     while(partial_result['next']):

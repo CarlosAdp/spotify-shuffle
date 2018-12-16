@@ -31,11 +31,11 @@ if __name__ == "__main__":
         chosen_ids.append(first_song_id)
         candidates.remove(first_song_id)
 
-        # Escolha das outras 99
-        for i in range(99):
+        # Escolha das outras 49
+        for i in range(49):
             # Cálculo da "média" das últimas músicas escolhidas (pesos de 16 para a última, 8 para a anterior, 4, 2 e 1, sucessivamente)
             base_features = calculate_base_features(chosen_ids, infos)
-            closed_candidates = sorted(candidates, key = lambda item : get_song_distance(infos[item], base_features, weights))[:int(len(candidates)/20)]
+            closed_candidates = sorted(candidates, key = lambda item : get_song_distance(infos[item], base_features, weights))[5:int(len(candidates)/20)]
 
             next_id = russian_roulette(closed_candidates, key = lambda item: 1 / (0.00000001 + get_song_distance(base_features, infos.get(item), weights)))
             chosen_ids.append(next_id)
