@@ -8,7 +8,7 @@ from utils.constants import Constants
 
 # Definição do nome do arquivo e dos pesos para calculo de distância entre músicas
 filename = "library_mirror.csv"
-weights = [6, 16, 0.5, 18, 1, 6, 1, 0.5, 1, 5, 0.5, 20]
+weights = [1, 1.8, 0.1, 1.9, 1.6, 0.1, 0.1, 0.1, 0.1, 1, 0.2, 2]
 
 
 if __name__ == "__main__":
