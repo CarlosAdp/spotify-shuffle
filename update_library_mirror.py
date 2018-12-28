@@ -5,6 +5,7 @@ from utils.constants import Constants
 
 filename = "library_mirror.csv"
 limit = 50
+print("A")
 
 if __name__ == "__main__":
     # Abrindo CSV
