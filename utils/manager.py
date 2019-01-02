@@ -1,96 +1,83 @@
 from utils.constants import Constants
-from spotipy.util import prompt_for_user_token
-import spotipy
+from datetime import datetime
 import random
+from utils.library import LocalLibrary
+from utils.lastfm import LastFmUtils
+from utils.spotify_utils import SpotifyUtils
+from numpy import average
 
 class Manager:
+    """
+    Classe para realização de operações do sistema
+    Sua inicialização é requisito necessário para funcionamento de qualquer script do projeto
+    e envolve:
+    - Inicialização de constantes
+    - Carregamento da biblioteca local
+    - Carregamento dos pesos utilizados na análise de proximidade
+    """
     @classmethod
     def init(cls) -> None:
-        cls.features_weights = [5, 5, 1, 5, 5, 2, 5, 5, 5, 4, 2, 5]
-        return
+        Constants.init()
+        LocalLibrary.load()
+        cls.weights = [1, 2, 0.1, 1.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 1.8]
 
     @classmethod
-    def get_token(cls) -> str:
-        Constants.token = prompt_for_user_token(username=Constants.username,
-                scope=Constants.scopes,
-                client_id=Constants.client_id,
-                client_secret=Constants.client_secret,
-                redirect_uri=Constants.redirect_uri)
-
-        print(Constants.token)
-        return Constants.token
+    def prepare_candidates(cls) -> None:
+        cls.candidates_ids = list(LocalLibrary.data.index)
+        cls.chosen_songs_ids = list()
 
     @classmethod
-    def get_spotify_instance(cls) -> spotipy.client.Spotify:
-        cls.spotify_instance = spotipy.Spotify(auth = Constants.token)
-        return cls.spotify_instance
+    def mount_shuffled_playlist(cls) -> None:
+        # Escolhendo a primeira música
+        first_song_candidates_ids = random.sample(cls.candidates_ids, 50)
+        first_song_candidates_infos = LocalLibrary.get(ids=first_song_candidates_ids, columns=["artist", "album", "title"])
+        first_song_candidates_time_metrics = [cls._calculate_time_metrics(data) for id, data in first_song_candidates_infos.iterrows()]
+
+        first_song_id = first_song_candidates_ids[first_song_candidates_time_metrics.index(max(first_song_candidates_time_metrics))]
+
+        cls.chosen_songs_ids.append(first_song_id)
+        cls.candidates_ids.remove(first_song_id)
+
+        while len(cls.chosen_songs_ids) < 50:
+            next_song_id = cls._pick_next_song()
+            cls.chosen_songs_ids.append(next_song_id)
+            cls.candidates_ids.remove(next_song_id)
+
+        SpotifyUtils.authenticate()
+        SpotifyUtils.create_playlist(name="shuffle_{}".format(cls.chosen_songs_ids[0]), ids=cls.chosen_songs_ids)
+        print(LocalLibrary.get(ids=cls.chosen_songs_ids))
 
     @classmethod
-    def get_songs_ids(cls) -> list:
-        result = []
+    def _calculate_time_metrics(cls, data) -> float:
+        instants = LastFmUtils.get(data.artist, data.album, data.title)
+        denominator = 1.0
 
-        partial_result = cls.spotify_instance.current_user_saved_tracks(limit = 50)
-        result = result + [item['track']['id'] for item in partial_result['items']]
+        if instants is not None:
+            now = datetime.now()
 
-        while(partial_result['next']):
-            partial_result = cls.spotify_instance.next(partial_result)
-            result = result + [item['track']['id'] for item in partial_result['items']]
+            for instant in instants:
+                denominator += 1.0/(now - instant).total_seconds()
 
-        cls.songs_ids = result
-        return result
-
-    @classmethod
-    def pick_base_song_id(cls) -> str:
-        cls.base_song_id = random.choice(cls.songs_ids)
-        cls.base_song_denormalized_features = cls.spotify_instance.audio_features(tracks = [cls.base_song_id])[0]
-        cls.base_song_normalized_features = cls.normalize_features(cls.base_song_denormalized_features)
-        return cls.base_song_id
+        return 1.0/denominator
 
     @classmethod
-    def get_candidates_ids(cls) -> list:
-        random.shuffle(cls.songs_ids)
-        cls.songs_ids = cls.songs_ids[:1000]
+    def _pick_next_song(cls) -> str:
+        base_features = cls._calculate_base_features()
+        closest_twenty = sorted(cls.candidates_ids, key = lambda item : cls._get_song_distance(base_features, LocalLibrary.get(ids=[item], columns=Constants.features_names).values.tolist()[0], weight=cls.weights))[:20]
+        closest_twenty_data = LocalLibrary.get(ids=closest_twenty)
+        time_metrics = [cls._calculate_time_metrics(data) for id, data in closest_twenty_data.iterrows()]
+        next_song_id = closest_twenty[time_metrics.index(max(time_metrics))]
+
+        return next_song_id
 
     @classmethod
-    def get_songs_features(cls) -> None:
-        songs_ids_split_50 = [cls.songs_ids[i : i + 50] for i in range(0, len(cls.songs_ids), 50)]
+    def _calculate_base_features(cls) -> list:
+        last_songs_ids = cls.chosen_songs_ids[-2:]
+        weights = [1, 2][-1 * len(last_songs_ids):]
+        last_ids_features = LocalLibrary.get(ids=last_songs_ids, columns=Constants.features_names)
 
-        cls.songs_features_denormalized = []
-        for songs_ids in songs_ids_split_50:
-            cls.songs_features_denormalized += cls.spotify_instance.audio_features(
-                    tracks = songs_ids)
-
-        cls.songs_features_normalized = []
-        for features in cls.songs_features_denormalized:
-            cls.songs_features_normalized.append(cls.normalize_features(features))
+        return average(last_ids_features, axis=0, weights=weights)
 
     @classmethod
-    def get_similar_songs(cls) -> list:
-        return [cls.base_song_id, 
-                list(zip(*sorted(cls.songs_features_normalized, key = lambda item : cls.distance_to_base_song(item))[:49]))[0]]
-
-    @classmethod
-    def normalize_features(cls, denormalized_features) -> None:
-        song_id = denormalized_features['id']
-        normalized_features = [
-                denormalized_features['acousticness'],
-                denormalized_features['danceability'],
-                float(denormalized_features['duration_ms'])/3600000,
-                denormalized_features['energy'],
-                denormalized_features['instrumentalness'],
-                max(float(2 * denormalized_features['key'] + denormalized_features['mode'])/23, 0),
-                denormalized_features['liveness'],
-                float(denormalized_features['loudness'] + 60)/60,
-                denormalized_features['speechiness'],
-                min(float(denormalized_features['tempo'])/500, 1),
-                float(denormalized_features['time_signature'] - 2)/18,
-                denormalized_features['valence']
-                ]
-        return song_id, normalized_features
-
-    @classmethod
-    def distance_to_base_song(cls, target_song) -> float:
-        p1 = cls.base_song_normalized_features[1]
-        p2 = target_song[1]
-        diff = [w * (i1 - i2) * (i1 - i2) for w, i1, i2 in zip(cls.features_weights, p1, p2)] 
-        return sum(diff)
+    def _get_song_distance(cls, s1_features, s2_features, weight):
+        return sum([w * (i1 - i2) * (i1 - i2) for w, i1, i2 in zip(weight, s1_features, s2_features)])

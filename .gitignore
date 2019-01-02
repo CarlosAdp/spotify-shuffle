@@ -1,4 +1,5 @@
 .config.ss
+.settings.ss
 .cache*
 *.pyc
 *.ods#

@@ -1,0 +1,28 @@
+from utils.constants import Constants
+import random
+from utils.library import LocalLibrary
+
+class Manager:
+    """
+    Classe para realização de operações do sistema
+    Sua inicialização é requisito necessário para funcionamento de qualquer script do projeto
+    e envolve:
+    - Inicialização de constantes
+    - Carregamento da biblioteca local
+    """
+    @classmethod
+    def init(cls) -> None:
+        Constants.init()
+        LocalLibrary.load()
+
+    @classmethod
+    def prepare_candidates(cls) -> None:
+        cls.candidates_ids = list(LocalLibrary.data.index)
+        cls.chosen_songs_ids = list()
+
+    @classmethod
+    def mount_shuffled_playlist(cls) -> None:
+        # Escolhendo a primeira música
+        first_song_candidates_ids = random.sample(cls.candidates_ids, 50)
+        first_song_candidates_infos = LocalLibrary.get(ids=None, columns=None)
+        print(first_song_candidates_infos)
