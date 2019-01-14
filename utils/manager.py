@@ -19,7 +19,7 @@ class Manager:
     def init(cls) -> None:
         Constants.init()
         LocalLibrary.load()
-        cls.weights = [1, 2, 0.1, 1.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 1.8]
+        cls.weights = [2, 4, 3, 1, 2, 1, 5]
 
     @classmethod
     def prepare_candidates(cls) -> None:
@@ -63,7 +63,7 @@ class Manager:
     @classmethod
     def _pick_next_song(cls) -> str:
         base_features = cls._calculate_base_features()
-        closest_twenty = sorted(cls.candidates_ids, key = lambda item : cls._get_song_distance(base_features, LocalLibrary.get(ids=[item], columns=Constants.features_names).values.tolist()[0], weight=cls.weights))[:20]
+        closest_twenty = sorted(cls.candidates_ids, key = lambda item : cls._get_song_distance(base_features, LocalLibrary.get(ids=[item], columns=Constants.features_names).values.tolist()[0], weight=cls.weights))[:5]
         closest_twenty_data = LocalLibrary.get(ids=closest_twenty)
         time_metrics = [cls._calculate_time_metrics(data) for id, data in closest_twenty_data.iterrows()]
         next_song_id = closest_twenty[time_metrics.index(max(time_metrics))]

@@ -1,7 +1,7 @@
 class Constants:
     spotify_limit = None
     local_library_filename = None
-    features_names = ["acousticness", "danceability", "duration", "energy", "instrumentalness", "key_and_mode", "liveness", "loudness", "speechiness", "tempo", "time_signature", "valence"]
+    features_names = ["acousticness", "danceability", "energy", "instrumentalness", "speechiness", "tempo", "valence"]
 
     @classmethod
     def init(cls):

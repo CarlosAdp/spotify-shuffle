@@ -6,6 +6,7 @@ class SpotifyUtils:
     """
     Classe que abstrai procedimentos relacionados ao Spotify
     """
+    _spotify_connection = spotipy.client.Spotify
     @classmethod
     def authenticate(cls) -> None:
         cls._token = prompt_for_user_token(username=Constants.spotify_username,
@@ -45,15 +46,10 @@ class SpotifyUtils:
         normalized_features = [
                 denormalized_features['acousticness'],
                 denormalized_features['danceability'],
-                float(denormalized_features['duration_ms'])/3600000,
                 denormalized_features['energy'],
                 denormalized_features['instrumentalness'],
-                max(float(2 * denormalized_features['key'] + denormalized_features['mode'])/23, 0),
-                denormalized_features['liveness'],
-                float(denormalized_features['loudness'] + 60)/60,
                 denormalized_features['speechiness'],
                 min(float(denormalized_features['tempo'])/500, 1),
-                float(denormalized_features['time_signature'])/18,
                 denormalized_features['valence']
                 ]
         return song_id, normalized_features
